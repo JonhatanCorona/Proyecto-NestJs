@@ -1,33 +1,41 @@
-import { Controller, Delete, Get, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, Res, UseGuards } from "@nestjs/common";
 import { UserService } from "./user.service";
+import { User } from "./user.entity";
+import { CreateUserDto } from "./CreateUserDto";
+import { AuthService } from "../Auth/auth.service";
+import { AuthGuard } from "src/guards/authGuard";
+
 
 @Controller("user")
 export class UserController{
 
-   constructor(private readonly userService: UserService) {}
-
-   @Get()
-         getUser () {
-             return this.userService.getUser()
-     }
+   constructor(private readonly userService: UserService,
+    private readonly authService: AuthService
+   ) {}
+    @UseGuards(AuthGuard)
+    @Get()
+        async getUsers(): Promise<User[]> {
+            return this.userService.getUser();
+  }
 
     @Get(":id")
-        getUserById (id: string) {
+        getUserById (@Param('id') id: string) {
             return this.userService.getUserById(id)
         }
 
-    @Post()
-        createUser () {
-            return this.userService.createUser()
-        }
+    @Get(':id/reservations')
+        getUserReservations(@Param('id') id: number) {
+            return this.userService.getUserReservations(id);
+  }
     
     @Put(":id")
-        udpateUser (id : string) {
-            return this.userService.udpateUser(id)
+        updateUser(@Param('id') id: string, @Body() body: CreateUserDto) {
+        return this.userService.updateUser(id, body);
         }
 
+
     @Delete(":id")
-        deleteUser (id : string) {
+        deleteUser (@Param('id') id: string) {
             return this.userService.deleteUser(id)
         }
 

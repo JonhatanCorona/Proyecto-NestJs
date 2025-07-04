@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany } from "typeorm";
-import { Cart } from "../Cart/cart.entity";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, UpdateDateColumn } from "typeorm";
 import { Order } from "../Orders/order.entity";
+import { Reservation } from "../Reservations/reservation.entity";
 
 @Entity({ name: "user" })
 export class User {
@@ -8,7 +8,7 @@ export class User {
   id: number;
 
   @Column()
-  nombre: string;
+  name: string;
 
   @Column({ unique: true })
   email: string;
@@ -26,8 +26,17 @@ export class User {
   telefono: string;
 
   @CreateDateColumn({ name: "date" })
-  date: Date;
+  createDate: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
+
+  @Column("text", { array: true, nullable: true })
+  suscripciones: string[];
 
   @OneToMany(() => Order, order => order.user)
   orders: Order[];
+
+  @OneToMany(() => Reservation, reservation => reservation.user)
+  reservations: Reservation[];
 }

@@ -3,20 +3,20 @@ import { Entity, PrimaryGeneratedColumn, Column } from "typeorm";
 @Entity({ name: "product" })
 export class Product {
   @PrimaryGeneratedColumn()
-  id_producto: number;
+  id: number;
 
   @Column()
-  nombre: string;
+  name: string;
 
   @Column("text")
-  descripcion: string;
+  description: string;
 
   @Column("decimal", { precision: 10, scale: 2 })
-  precio: number;
+  price: number;
 
   @Column("int")
   stock: number;
 
   @Column()
-  url_imagen: string;
+  url_image: string;
 }

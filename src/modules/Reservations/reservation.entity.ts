@@ -6,22 +6,28 @@ import { Service } from "../Services/service.entity";
 @Entity({ name: "reservation" })
 export class Reservation {
   @PrimaryGeneratedColumn()
-  id_reservation: number;
+  id: number;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: "userId" })
   user: User;
 
+  @Column()
+  userId: number;  // <--- aquí
+
   @ManyToOne(() => Service)
-  @JoinColumn({ name: "id_service" })
+  @JoinColumn({ name: "serviceId" })
   service: Service;
+
+  @Column()
+  serviceId: number;  // <--- aquí
 
   @Column("timestamp")
   date: Date;
 
-  @Column({ length: 20 })
-  status: string; // pendiente, confirmada, cancelada, completada
-
+  @Column({ length: 20, default: 'pendiente' })
+  status: string; 
+  
   @Column({ type: "text", nullable: true })
   notas: string | null;
 }
