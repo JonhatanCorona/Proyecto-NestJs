@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards } from "@nestjs/common";
 import { ReservationService } from "./reservation.service";
-import { CreateReservationDto } from "./CreateReservationDto";
+import { CreateReservationDto } from "../../dtos/CreateReservationDto";
+import { Roles } from "src/decorators/role.decorator";
+import { Role } from "../Auth/role.enum";
+import { AuthGuard } from "src/guards/authGuard";
+import { RoleGuard } from "src/guards/roleGuard";
 
 export interface UpdateReservationDto {
 id: string,
@@ -12,6 +16,8 @@ status: string,
 export class ReservationController{
     constructor(private readonly reservationService: ReservationService){}
 
+    @Roles(Role.Admin)
+    @UseGuards(AuthGuard, RoleGuard)
     @Get()
         getReservation () {
             return this.reservationService.getReservation()

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsEmail, IsString, ValidateIf, Length, Matches } from 'class-validator';
+import { IsNotEmpty, IsEmail, IsString, ValidateIf, Length, Matches, IsOptional, IsBoolean } from 'class-validator';
 
 export class CreateUserDto {
   @IsNotEmpty()
@@ -28,4 +28,8 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   telefono: string;
+
+  @IsOptional()
+  @IsBoolean()
+  es_admin?: boolean;
 }

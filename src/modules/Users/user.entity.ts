@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, OneToMany, UpdateDateColumn } from "typeorm";
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  OneToMany,
+  UpdateDateColumn
+} from "typeorm";
 import { Order } from "../Orders/order.entity";
 import { Reservation } from "../Reservations/reservation.entity";
 
@@ -25,14 +32,17 @@ export class User {
   @Column({ nullable: true })
   telefono: string;
 
+  @Column({ nullable: true })
+  image: string;  // <- nueva columna
+
+  @Column({ default: true })
+  status_activo: boolean;  // <- nueva columna
+
   @CreateDateColumn({ name: "date" })
   createDate: Date;
 
   @UpdateDateColumn({ name: "updated_at" })
   updatedAt: Date;
-
-  @Column("text", { array: true, nullable: true })
-  suscripciones: string[];
 
   @OneToMany(() => Order, order => order.user)
   orders: Order[];

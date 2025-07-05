@@ -1,7 +1,8 @@
 import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateUserDto } from '../Users/CreateUserDto';
-import { AuthCredentialDto } from './AuthCredentialDto';
+import { CreateUserDto } from '../../dtos/CreateUserDto';
+import { AuthCredentialDto } from 'src/dtos/AuthCredentialDto';
+
 
 @Controller('auth')
 export class AuthController {
@@ -15,5 +16,10 @@ export class AuthController {
   @Post('signIn')
   async SignIn(@Body()  user: AuthCredentialDto) {
     return this.authService.SignIn(user.email, user.password_hash)
+  }
+
+  @Post('google')
+  async signInWithGoogle(@Body() profile: { sub: string; email: string; name: string }) {
+    return this.authService.signInWithGoogle(profile);
   }
 }

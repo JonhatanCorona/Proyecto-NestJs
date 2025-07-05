@@ -1,8 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "./user.entity";
-import { CreateUserDto } from "./CreateUserDto";
+import { UdpateUserDto } from "../../dtos/UdpateUserDto";
+import * as bcrypt from 'bcrypt';
 
 Injectable({})
 export class UserService{
@@ -30,24 +31,37 @@ async getUserReservations(id: number) {
     return user.reservations;
   }
 
-async createUser(user: CreateUserDto): Promise<User> {
-    const existingUser = await this.userRepository.findOneBy({ email: user.email });
-  if (existingUser) {
-    throw new ConflictException('El correo ya existe');
-  }
-  return await this.userRepository.save(user);
-}
-
-async updateUser(id: string, data: CreateUserDto): Promise<User> {
+async updateUser(id: string, data: UdpateUserDto): Promise<User> {
   const user = await this.userRepository.findOneBy({ id: Number(id) });
 
   if (!user) {
     throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
   }
 
-  Object.assign(user, data); // Solo sobreescribe los campos presentes
+  if (data.email) {
+    const normalizedEmail = data.email.trim().toLowerCase();
+
+    const existingUser = await this.userRepository.findOneBy({ email: normalizedEmail });
+
+    if (existingUser && existingUser.id !== Number(id)) {
+      throw new BadRequestException('El correo ya está en uso por otro usuario');
+    }
+
+    user.email = normalizedEmail;
+  }
+
+  if (data.password_hash) {
+    const hashedPassword = await bcrypt.hash(data.password_hash, 10);
+    user.password_hash = hashedPassword;
+  }
+
+  if (data.name) user.name = data.name;
+  if (data.telefono) user.telefono = data.telefono;
+  if (typeof data.es_admin === 'boolean') user.es_admin = data.es_admin;
+
   return this.userRepository.save(user);
 }
+
 
 async deleteUser(id: string): Promise<{ message: string }> {
   await this.userRepository.delete(id);

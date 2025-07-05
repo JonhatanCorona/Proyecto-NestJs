@@ -3,8 +3,9 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../Users/user.entity";
 import * as bcrypt from 'bcrypt'; // <- importante
-import { CreateUserDto } from "../Users/CreateUserDto";
+import { CreateUserDto } from "../../dtos/CreateUserDto";
 import { JwtService } from "@nestjs/jwt";
+import { Role } from "./role.enum";
 @Injectable()
 export class AuthService {
   constructor(
@@ -55,17 +56,79 @@ export class AuthService {
   if (!isPasswordValid) {
     throw new BadRequestException("Credenciales inválidas");
   }
- const userPayload = {
-  sub: existingUser.id,
-  id: existingUser.id,
-  email: existingUser.email,
-};
 
+  if (existingUser.status_activo === false) {
+    throw new BadRequestException("Cuenta deshabilitada. Contacte con soporte.");
+  }
+
+ const userPayload = {
+  id: existingUser.id,
+  name: existingUser.name,
+  email: existingUser.email,
+  phone: existingUser.telefono,
+  role: [ existingUser.es_admin ? Role.Admin : Role.User ]
+};
+const hasPassword = !!(existingUser.password_hash && existingUser.password_hash.trim() !== '');
 const token = this.JWTServices.sign(userPayload);
 
 return {
   message: "Logueado correctamente",
   access_token: token,
+  password: hasPassword,
+  user: userPayload
 };
+}
+
+async signInWithGoogle(profile: { sub: string; email: string; name: string; image?: string }) {
+  const normalizedEmail = profile.email.trim().toLowerCase();
+
+  let existingUser = await this.userRepository.findOneBy({ email: normalizedEmail });
+
+  let wasCreated = false;
+
+  if (!existingUser) {
+    const newUser = this.userRepository.create({
+      name: profile.name,
+      email: normalizedEmail,
+      google_id: profile.sub,
+      password_hash: '',
+      telefono: '',
+      es_admin: false,
+      image: profile.image ?? '', // <- Usa valor vacío si no viene
+    });
+
+    existingUser = await this.userRepository.save(newUser);
+    wasCreated = true;
+  } else {
+    if (existingUser.status_activo === false) {
+      throw new BadRequestException("Cuenta deshabilitada. Contacte con soporte.");
+    }
+
+    if (!existingUser.google_id) {
+      existingUser.google_id = profile.sub;
+      await this.userRepository.save(existingUser);
+    }
+  }
+
+  const userPayload = {
+    id: existingUser.id,
+    name: existingUser.name,
+    email: existingUser.email,
+    phone: existingUser.telefono,
+    image: existingUser.image,
+    role: [existingUser.es_admin ? Role.Admin : Role.User],
+  };
+
+  const hasPassword = !!(existingUser.password_hash && existingUser.password_hash.trim() !== '');
+  const token = this.JWTServices.sign(userPayload);
+
+  return {
+    message: wasCreated
+      ? 'Usuario creado y autenticado con Google'
+      : 'Usuario existente autenticado con Google',
+    access_token: token,
+    password: hasPassword,
+    user: userPayload,
+  };
 }
 }
