@@ -6,9 +6,14 @@ import { CartDetails } from "../CartDetails/cartDetails.entity";
 export class Cart {
   @PrimaryGeneratedColumn()
   id_cart: number;
+  
 
   @CreateDateColumn({ name: "fecha_creacion" })
   fecha_creacion: Date;
+
+  @ManyToOne(() => User, user => user.cart)
+  @JoinColumn({ name: "userId" })
+  user: User;
 
   @OneToMany(() => CartDetails, details => details.cart)
   details: CartDetails[];   

@@ -10,6 +10,8 @@ import TypeOrmConfig from  './config/tyoeorm'
 import { ReservationModule } from './modules/Reservations/reservation.module';
 import { ServiceModule } from './modules/Services/service.module';
 import { JwtModule } from '@nestjs/jwt';
+import { CartModule } from './modules/Cart/cart.module';
+import { OrderModule } from './modules/Orders/order.module';
 
 @Module({
 imports: [
@@ -33,6 +35,8 @@ imports: [
     ProductModule,
     ReservationModule,
     ServiceModule,
+    CartModule,
+    OrderModule,
     JwtModule.register({
       global: true,
       signOptions: {expiresIn: "1h"},

@@ -14,7 +14,7 @@ export class UserController{
    constructor(private readonly userService: UserService,
     private readonly authService: AuthService
    ) {}
-    @Roles(Role.Admin)
+    //@Roles(Role.Admin)
     @UseGuards(AuthGuard, RoleGuard)
     @Get()
         async getUsers(): Promise<User[]> {
