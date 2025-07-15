@@ -9,6 +9,7 @@ import {
 import { Order } from "../Orders/order.entity";
 import { Reservation } from "../Reservations/reservation.entity";
 import { Cart } from "../Cart/cart.entity";
+import { ApiProperty } from "@nestjs/swagger";
 
 @Entity({ name: "user" })
 export class User {
@@ -34,10 +35,10 @@ export class User {
   telefono: string;
 
   @Column({ nullable: true })
-  image: string;  // <- nueva columna
+  image: string;
 
   @Column({ default: true })
-  status_activo: boolean;  // <- nueva columna
+  status_activo: boolean;  
 
   @CreateDateColumn({ name: "date" })
   createDate: Date;
@@ -52,5 +53,5 @@ export class User {
   reservations: Reservation[];
 
   @OneToMany(() => Cart, cart => cart.user)
- cart: Cart[];
+  cart: Cart[];
 }

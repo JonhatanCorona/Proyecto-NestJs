@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Reservation } from "./reservation.entity";
 import { Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
-import { CreateReservationDto } from "../../dtos/CreateReservationDto";
+import { CreateReservationDto, SimpleReservationDto, UpdateReservationDto } from "src/dtos/ReservationDto";
 
 @Injectable()
 export class ReservationService {
@@ -10,11 +10,29 @@ export class ReservationService {
     @InjectRepository(Reservation) private reservationRepository: Repository<Reservation>,
   ) {}
 
-async getReservation(): Promise<Reservation[]> {
-  return await this.reservationRepository
+async getReservation(): Promise<SimpleReservationDto[]> {
+  const reservations = await this.reservationRepository
     .createQueryBuilder('reservation')
     .leftJoinAndSelect('reservation.user', 'user')
     .leftJoinAndSelect('reservation.service', 'service')
+    .getMany();
+
+  return reservations.map(r => ({
+  id: r.id,
+  userName: r.user.name,
+  serviceName: r.service.name,
+  date: r.date,
+  status: r.status,
+  notas: r.notas ?? undefined,
+}));
+}
+
+async getReservationById(id: string): Promise<SimpleReservationDto | null> {
+  const reservation = await this.reservationRepository
+    .createQueryBuilder('reservation')
+    .leftJoinAndSelect('reservation.user', 'user')
+    .leftJoinAndSelect('reservation.service', 'service')
+    .where('reservation.id = :id', { id: Number(id) })
     .select([
       'reservation.id',
       'reservation.date',
@@ -23,45 +41,66 @@ async getReservation(): Promise<Reservation[]> {
       'user.name',
       'service.name',
     ])
-    .getMany();
+    .getOne();
+
+  if (!reservation) return null;
+
+  return {
+    id: reservation.id,
+    userName: reservation.user.name,
+    serviceName: reservation.service.name,
+    date: reservation.date,
+    status: reservation.status,
+    notas: reservation.notas ?? undefined,
+  };
 }
 
-  async getReservationById(id: string): Promise<Reservation | null> {
-    return await this.reservationRepository.findOneBy({ id: Number(id) });
+
+async saveReservation(reservationDto: CreateReservationDto): Promise<{ message: string }> {
+  if (!reservationDto.userId) {
+    new BadRequestException("El usuario es obligatorio");
   }
 
-async saveReservation(reservationDto: CreateReservationDto): Promise<Reservation> {
-  if (!reservationDto.userId) {
-    throw new Error("El usuario es obligatorio");
-  }
   if (!reservationDto.serviceId) {
-    throw new Error("El servicio es obligatorio");
+    new BadRequestException("El servicio es obligatorio");
   }
 
   const reservation = this.reservationRepository.create({
-  userId: reservationDto.userId,     // asigna solo el número
-  serviceId: reservationDto.serviceId,
-  date: reservationDto.date,
-  status: 'pendiente',
-  notas: reservationDto.notas,
-});
+    userId: reservationDto.userId,
+    serviceId: reservationDto.serviceId,
+    date: reservationDto.date,
+    status: 'pendiente',
+    notas: reservationDto.notas,
+  });
 
-  return await this.reservationRepository.save(reservation);
+  await this.reservationRepository.save(reservation);
+
+  return { message: 'Reservación registrada con éxito' };
 }
 
-async updateReservation(id: string, reservation: CreateReservationDto): Promise<Reservation> {
-  const user = await this.reservationRepository.findOneBy({ id: Number(id) });
 
-  if (!user) {
-    throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+async updateReservation(id: string, data: UpdateReservationDto): Promise<{ message: string }> {
+  const reservation = await this.reservationRepository.findOneBy({ id: Number(id) });
+
+  if (!reservation) {
+    throw new NotFoundException(`Reservación con ID ${id} no encontrada`);
   }
 
-  Object.assign(user, reservation); // Sobrescribe solo los campos presentes
-  return this.reservationRepository.save(user); // <- Aquí está la corrección
+  Object.assign(reservation, data);
+  await this.reservationRepository.save(reservation);
+
+  return { message: `Reservación con ID ${id} actualizada con éxito` };
 }
 
- async deleteReservation(id: string): Promise<{ message: string }> {
-  await this.reservationRepository.delete(id);
-  return { message: `Reservacion con numero ${id} eliminada` };
+
+async deleteReservation(id: string): Promise<{ message: string }> {
+  const result = await this.reservationRepository.delete(id);
+
+  if (result.affected === 0) {
+    throw new NotFoundException(`Reservación con número ${id} no encontrada`);
+  }
+
+  return { message: `Reservación con número ${id} eliminada exitosamente` };
 }
+
 }

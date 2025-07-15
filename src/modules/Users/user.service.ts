@@ -4,68 +4,110 @@ import { Repository } from "typeorm";
 import { User } from "./user.entity";
 import { UdpateUserDto } from "../../dtos/UdpateUserDto";
 import * as bcrypt from 'bcrypt';
+import { UserSummaryDto } from "src/dtos/UserDto";
 
 Injectable({})
 export class UserService{
         constructor(
                 @InjectRepository(User) private userRepository: Repository<User>,
             ){}
-async getUser(): Promise<User[]> {
-    return await this.userRepository.find();
+async getUser(): Promise<UserSummaryDto[]> {
+  return this.userRepository.find({
+    select: [
+      'id',
+      'name',
+      'email',
+      'telefono',
+      'image',
+      'es_admin',
+      'status_activo',
+    ],
+  });
 }
 
-async getUserById(id: string): Promise<User | null> {
-  return await this.userRepository.findOneBy({ id: Number(id) });
+async getUserById(id: string): Promise<UserSummaryDto | null> {
+  return await this.userRepository.findOne({
+    where: { id: Number(id) },
+    select: ['id', 'name', 'email', 'telefono', 'image', 'es_admin', 'status_activo'],
+  });
 }
 
 async getUserReservations(id: number) {
-    const user = await this.userRepository.findOne({
-      where: { id },
-      relations: ['reservations'], 
-    });
+  const user = await this.userRepository.findOne({
+    where: { id },
+    relations: [
+      'reservations',
+      'reservations.service',
+    ],
+  });
 
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
-
-    return user.reservations;
+  if (!user) {
+    throw new NotFoundException('Usuario no encontrado');
   }
 
-async updateUser(id: string, data: UdpateUserDto): Promise<User> {
+  return user.reservations;
+}
+
+
+async updateUser(id: string, data: UdpateUserDto): Promise<Partial<User>> {
   const user = await this.userRepository.findOneBy({ id: Number(id) });
 
   if (!user) {
     throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
   }
 
-  if (data.email) {
-    const normalizedEmail = data.email.trim().toLowerCase();
+  if (data.name && data.name.trim() !== '') {
+  user.name = data.name.trim();
+}
 
-    const existingUser = await this.userRepository.findOneBy({ email: normalizedEmail });
+if (data.email && data.email.trim() !== '') {
+  const normalizedEmail = data.email.trim().toLowerCase();
+  // aquí valida si email existe ya como antes
+  user.email = normalizedEmail;
+}
 
-    if (existingUser && existingUser.id !== Number(id)) {
-      throw new BadRequestException('El correo ya está en uso por otro usuario');
-    }
+if (data.password_hash && data.password_hash.trim() !== '') {
+  const hashedPassword = await bcrypt.hash(data.password_hash, 10);
+  user.password_hash = hashedPassword;
+}
 
-    user.email = normalizedEmail;
-  }
+if (data.telefono && data.telefono.trim() !== '') {
+  user.telefono = data.telefono.trim();
+}
 
-  if (data.password_hash) {
-    const hashedPassword = await bcrypt.hash(data.password_hash, 10);
-    user.password_hash = hashedPassword;
-  }
+if (typeof data.es_admin === 'boolean') {
+  user.es_admin = data.es_admin;
+}
 
-  if (data.name) user.name = data.name;
-  if (data.telefono) user.telefono = data.telefono;
-  if (typeof data.es_admin === 'boolean') user.es_admin = data.es_admin;
 
-  return this.userRepository.save(user);
+  const updatedUser = await this.userRepository.save(user);
+
+  // Filtrar campos sensibles
+  const {
+    password_hash,
+    google_id,
+    createDate,
+    status_activo,
+    updatedAt,
+    image,
+    es_admin,
+    ...safeUser
+  } = updatedUser;
+
+  return safeUser;
 }
 
 
 async deleteUser(id: string): Promise<{ message: string }> {
-  await this.userRepository.delete(id);
-  return { message: `Usuario con id ${id} eliminado` };
+  const user = await this.userRepository.findOneBy({ id: Number(id) });
+
+  if (!user) {
+    throw new NotFoundException(`Usuario con ID ${id} no encontrado`);
+  }
+
+  await this.userRepository.remove(user);
+
+  return { message: `Usuario con ID ${id} eliminado correctamente` };
 }
 
 }

@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User } from "../Users/user.entity";
 import * as bcrypt from 'bcrypt'; // <- importante
-import { CreateUserDto } from "../../dtos/CreateUserDto";
+import { CreateUserDto } from "../../dtos/UserDto";
 import { JwtService } from "@nestjs/jwt";
 import { Role } from "./role.enum";
 @Injectable()
@@ -14,29 +14,33 @@ export class AuthService {
     private JWTServices :JwtService
   ) {}
 
-  async SignUp(user: CreateUserDto) {
-    const normalizedEmail = user.email?.trim().toLowerCase();
+  async SignUp(user: CreateUserDto): Promise<{ message: string }> {
+  const normalizedEmail = user.email?.trim().toLowerCase();
 
-    if (!normalizedEmail) {
-      throw new BadRequestException("El campo 'email' es requerido");
-    }
-
-    const existingUser = await this.userRepository.findOneBy({ email: normalizedEmail });
-
-    if (existingUser) {
-      throw new BadRequestException('El correo ya existe');
-    }
-
-    const hashedPassword = await bcrypt.hash(user.password_hash, 10);
-
-    const newUser = this.userRepository.create({
-      ...user,
-      email: normalizedEmail,
-      password_hash: hashedPassword,
-    });
-
-    return this.userRepository.save(newUser);
+  if (!normalizedEmail) {
+    throw new BadRequestException("El campo 'email' es requerido");
   }
+
+  const existingUser = await this.userRepository.findOneBy({ email: normalizedEmail });
+
+  if (existingUser) {
+    throw new BadRequestException('El correo ya existe');
+  }
+
+  const hashedPassword = await bcrypt.hash(user.password_hash, 10);
+
+  const newUser = this.userRepository.create({
+    ...user,
+    email: normalizedEmail,
+    password_hash: hashedPassword,
+  });
+
+  await this.userRepository.save(newUser);
+
+  return {
+    message: 'Usuario registrado correctamente',
+  };
+}
 
   async SignIn (email: string, password_hash: string) {
       const normalizedEmail = email?.trim().toLowerCase();
