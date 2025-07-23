@@ -4,29 +4,25 @@ import { Roles } from "src/decorators/role.decorator";
 import { Role } from "../Auth/role.enum";
 import { AuthGuard } from "src/guards/authGuard";
 import { RoleGuard } from "src/guards/roleGuard";
-import { CreateReservationDto, SimpleReservationDto } from "src/dtos/ReservationDto";
-import { ApiBadRequestResponse, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiParam, ApiResponse } from "@nestjs/swagger";
-import { Reservation } from "./reservation.entity";
+import { CreateReservationDto, SimpleReservationDto, UpdateReservationDto } from "src/dtos/ReservationDto";
+import { ApiBadRequestResponse, ApiBearerAuth, ApiCreatedResponse, ApiNotFoundResponse, ApiOkResponse, ApiParam, ApiResponse } from "@nestjs/swagger";
 
-export interface UpdateReservationDto {
-id: string,
-service: string,
-date: string,
-status: string,
-}
+
 @Controller("reservation")
 export class ReservationController{
     constructor(private readonly reservationService: ReservationService){}
-
+    
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Get()
-    @ApiOkResponse({ description: 'Lista de todos los productos', type: [Reservation] })
+    @ApiOkResponse({ description: 'Lista de todos los productos', type: [SimpleReservationDto] })
       getReservation(): Promise<SimpleReservationDto[]> {
       return this.reservationService.getReservation();
 }
     
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Get(':id')
     @ApiParam({ name: 'id', type: 'string', description: 'ID de la reserva' })
@@ -37,6 +33,7 @@ export class ReservationController{
 }
 
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Post()
     @ApiCreatedResponse({ description: 'Reservacion creada exitosamente' })
@@ -46,9 +43,10 @@ export class ReservationController{
 }
 
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Put(':id')
-    @ApiResponse({status: 200, description: 'Reservación actualizada con éxito',})
+    @ApiResponse({status: 200, description: 'Reservación actualizada con éxito' })
     @ApiBadRequestResponse({ description: 'Datos inválidos' })
     @ApiNotFoundResponse({ description: 'Reservación no encontrada' })
        updateReservation(@Param('id') id: string, @Body() body: UpdateReservationDto) {
@@ -56,6 +54,7 @@ export class ReservationController{
 }
 
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Delete(':id')
     @ApiResponse({ status: 200, description: 'Reservacion eliminada correctamente' })

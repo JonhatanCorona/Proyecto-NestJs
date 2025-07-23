@@ -57,7 +57,8 @@ export class GoogleProfileDto {
   @IsString()
   @ApiProperty()
   name: string;
-
+  
+  @IsOptional()
   @IsUrl()
   @ApiProperty()
   image?: string;

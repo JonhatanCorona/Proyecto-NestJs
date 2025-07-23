@@ -13,7 +13,6 @@ export class CreateUserDto {
   @ApiProperty()
   email: string;
 
-  @ValidateIf(o => !o.google_id)
   @IsNotEmpty({ message: 'password_hash es requerido si no se envía google_id' })
   @IsString()
   @Length(8, 15, { message: 'La contraseña debe tener entre 8 y 15 caracteres' })
@@ -24,11 +23,6 @@ export class CreateUserDto {
   @ApiProperty()
   password_hash: string;
 
-  @ValidateIf(o => !o.password_hash)
-  @IsNotEmpty({ message: 'Google ID es requerido si no se envía password_hash' })
-  @IsString()
-  @ApiProperty()
-  google_id: string;
 
   @IsNotEmpty()
   @IsString()

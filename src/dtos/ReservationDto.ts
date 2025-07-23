@@ -1,25 +1,6 @@
 import { ApiProperty, PartialType } from "@nestjs/swagger";
-import { UserSummaryDto } from "./UserDto";
 import { IsDateString, IsNotEmpty, IsOptional, IsString } from "class-validator";
-
-export class ServiceDto {
-  @ApiProperty()
-  id: number;
-
-  @ApiProperty()
-  name: string;
-
-  @ApiProperty()
-  description: string;
-
-  @ApiProperty()
-  price: number;
-
-  @ApiProperty()
-  duracion_min: number;
-}
-
-
+import { ServiceDto } from "./ServiceDto";
 
 export class ReservationDto {
   @ApiProperty()

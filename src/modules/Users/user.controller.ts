@@ -7,7 +7,7 @@ import { Roles } from "src/decorators/role.decorator";
 import { Role } from "../Auth/role.enum";
 import { RoleGuard } from "src/guards/roleGuard";
 import { UdpateUserDto, UdpateUserResponseDto } from "../../dtos/UdpateUserDto";
-import { ApiResponse } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiResponse } from "@nestjs/swagger";
 import { UserSummaryDto } from "src/dtos/UserDto";
 import { ReservationDto } from "src/dtos/ReservationDto";
 
@@ -17,6 +17,8 @@ export class UserController{
    constructor(private readonly userService: UserService,
     private readonly authService: AuthService
    ) {}
+
+    @ApiBearerAuth()
     //@Roles(Role.Admin)
     @UseGuards(AuthGuard, RoleGuard)
     @Get()
@@ -25,6 +27,7 @@ export class UserController{
         return this.userService.getUser();
 }
 
+    @ApiBearerAuth()
     //@Roles(Role.Admin)
     @UseGuards(AuthGuard, RoleGuard)
     @Get(":id")
@@ -32,6 +35,8 @@ export class UserController{
         getUserById(@Param('id') id: string): Promise<UserSummaryDto | null> {
         return this.userService.getUserById(id);
 }
+
+    @ApiBearerAuth()
     @UseGuards(AuthGuard)
     @Get(':id/reservations')
     @ApiResponse({ status: 200, description: 'Reservas del usuario', type: [ReservationDto] })
@@ -39,6 +44,7 @@ export class UserController{
         return this.userService.getUserReservations(id);
 }
 
+    @ApiBearerAuth()
     @UseGuards(AuthGuard)
     @Put(":id")
     @ApiResponse({ status: 200, type: UdpateUserResponseDto })
@@ -47,6 +53,7 @@ export class UserController{
         }
 
     //@Roles(Role.Admin)
+    @ApiBearerAuth()
     @UseGuards(AuthGuard, RoleGuard)
     @Delete(":id")
     @ApiResponse({ status: 200, description: 'Usuario eliminado correctamente' })

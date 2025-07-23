@@ -33,6 +33,7 @@ async function bootstrap() {
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Nest')
     .setDescription('Este es una API construida con NestJS para mi backend')
+    .addBearerAuth() // Autenticación con Bearer Token
     .setVersion('1.0.0') // Versión semántica, evita usar ^ en Swagger
     .build();
 

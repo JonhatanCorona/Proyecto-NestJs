@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Order } from "./order.entity";
 import { Repository } from "typeorm";
+import { SimpleOrderDto } from "src/dtos/OrderDto";
 
 Injectable({})
 export class OrderService{
@@ -12,10 +13,9 @@ export class OrderService{
 
      ) {}
    
-async getAllOrders(): Promise<any[]> {
+async getAllOrders(): Promise<SimpleOrderDto[]> {
   const orders = await this.orderRepository.find({
-    relations: ['user', 'details', 'details.product'],
-    order: { date: 'ASC' },
+    relations: ['details', 'details.product'],
   });
 
   return orders.map(order => ({
@@ -23,31 +23,23 @@ async getAllOrders(): Promise<any[]> {
     date: order.date,
     total: order.total,
     estado: order.estado,
-    user: {
-      id: order.user.id,
-      name: order.user.name,
-    },
     details: order.details.map(detail => ({
-      id_order: detail.id_order,
-      precio_unitario: detail.precio_unitario,
-      cantidad: detail.cantidad,
       product: {
-        id: detail.product.id,
         name: detail.product.name,
-        description: detail.product.description,
-        url_image: detail.product.url_image,
+        price: detail.product.price,
       },
+      cantidad: detail.cantidad,
+      precio_unitario: detail.precio_unitario,
     })),
   }));
 }
 
 
-
-   async getOrdersByUser(userId: number): Promise<Order[]> {
+   async getOrdersByUser(userId: number): Promise<SimpleOrderDto[]> {
       return this.orderRepository.find({
    where: { user: { id: userId } },
-   relations: ['details', 'details.product'], // Trae detalles y productos
-   order: { date: 'DESC' }, // Opcional, ordena por fecha descendente
+   relations: ['details', 'details.product'],
+   order: { date: 'DESC' }, 
 });
 }
 

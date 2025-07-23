@@ -8,6 +8,7 @@ import { Product } from '../Products/product.entity';
 import { Order } from '../Orders/order.entity';
 import { OrderDetails } from '../OrderDetails/orderDetails.entity';
 import { User } from '../Users/user.entity';
+import { SimpleCartDto } from 'src/dtos/CartDto';
 
 @Injectable()
 export class CartService {
@@ -21,13 +22,29 @@ export class CartService {
   ) {}
 
   // ✅ 1. Obtener el carrito de un usuario
-  async getCartByUser(userId: number): Promise<Cart | null> {
-    return await this.cartRepository.findOne({
-      where: { user: { id: userId } },
-      relations: ['details', 'details.product'],
-      order: { id_cart: 'DESC' },
-    });
-  }
+async getCartByUser(userId: number): Promise<SimpleCartDto | null> {
+  const cart = await this.cartRepository.findOne({
+    where: { user: { id: userId } },
+    relations: ['details', 'details.product'],
+    order: { id_cart: 'DESC' },
+  });
+
+  if (!cart) return null;
+
+  return {
+    id_cart: cart.id_cart,
+    fecha_creacion: cart.fecha_creacion,
+    details: cart.details.map(detail => ({
+      product: {
+        name: detail.product.name,
+        price: detail.product.price,
+      },
+      cantidad: detail.cantidad,
+      precio_unitario: detail.precio_unitario,
+    })),
+  };
+}
+
 
   // ✅ 2. Agregar producto al carrito
 async addToCart(userId: number, productId: number, cantidad: number): Promise<void> {
@@ -100,63 +117,75 @@ async removeQuantityFromCart(userId: number, productId: number, cantidadToRemove
 
 
   // ✅ 3. Finalizar compra (checkout)
-async checkout(userId: number): Promise<any> {
-  const cart = await this.cartRepository.findOne({
-    where: { user: { id: userId } },
-    relations: ['details', 'details.product', 'user'],
-  });
+  async checkout(userId: number): Promise<any> {
+    const cart = await this.cartRepository.findOne({
+      where: { user: { id: userId } },
+      relations: ['details', 'details.product', 'user'],
+    });
 
-  if (!cart || cart.details.length === 0) {
-    throw new Error('El carrito está vacío');
+    if (!cart || cart.details.length === 0) {
+      throw new BadRequestException('El carrito está vacío');
+    }
+
+    const total = cart.details.reduce(
+      (sum, item) => sum + item.precio_unitario * item.cantidad,
+      0,
+    );
+
+    const order = this.orderRepository.create({
+      user: cart.user,
+      date: new Date(),
+      estado: 'pendiente',
+      total,
+    });
+    await this.orderRepository.save(order);
+
+    const orderDetails: OrderDetails[] = [];
+
+    for (const item of cart.details) {
+      const product = item.product;
+
+      if (product.stock < item.cantidad) {
+        throw new BadRequestException(
+          `No hay suficiente stock para el producto: ${product.name}`,
+        );
+      }
+
+      product.stock -= item.cantidad;
+      await this.productRepository.save(product);
+
+      const detail = this.orderDetailsRepository.create({
+        order,
+        product,
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+      });
+
+      orderDetails.push(detail);
+    }
+
+    await this.orderDetailsRepository.save(orderDetails);
+
+    // Vaciar el carrito
+    await this.cartDetailsRepository.remove(cart.details);
+
+    // Devolver respuesta limpia
+    return {
+      orderId: order.id_orden,
+      total: order.total,
+      estado: order.estado,
+      date: order.date,
+      user: {
+        id: order.user.id,
+        name: order.user.name,
+      },
+      productos: orderDetails.map(d => ({
+        id: d.product.id,
+        name: d.product.name,
+        cantidad: d.cantidad,
+        precio_unitario: d.precio_unitario,
+      })),
+    };
   }
-
-  const total = cart.details.reduce(
-    (sum, item) => sum + item.precio_unitario * item.cantidad,
-    0,
-  );
-
-  const order = this.orderRepository.create({
-    user: cart.user,
-    date: new Date(),
-    estado: 'pendiente',
-    total,
-  });
-  await this.orderRepository.save(order);
-
-  const orderDetails: OrderDetails[] = [];
-
-for (const item of cart.details) {
-  const product = item.product;
-
-  if (product.stock < item.cantidad) {
-    throw new Error(`No hay suficiente stock para el producto: ${product.name}`);
-  }
-
-  product.stock -= item.cantidad;
-  await this.productRepository.save(product);
-
-  const detail = this.orderDetailsRepository.create({
-    order,
-    product,
-    cantidad: item.cantidad,
-    precio_unitario: item.precio_unitario,
-  });
-
-  orderDetails.push(detail);
-  }
-
-  await this.orderDetailsRepository.save(orderDetails);
-
-  // Vaciar el carrito
-  await this.cartDetailsRepository.remove(cart.details);
-
-  // Devolver orden con usuario simplificado
-  return {
-    ...order,
-    user: {
-      name: order.user.name,
-    },
-  };
-}
 
 }
